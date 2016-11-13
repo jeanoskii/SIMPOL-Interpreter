@@ -41,33 +41,22 @@ namespace SIMPOL
         {
             if (!string.IsNullOrWhiteSpace(txtFile.Text))
             {
-                Token.tokenStream = "";
+                //Token.tokenStream = "";
+                Token.Clear();
                 Symbol.Clear();
                 txtOutput.Clear();
                 StreamReader sr = new StreamReader(txtFile.Text);
                 string result = sr.ReadToEnd();
                 Lexer lexer = new Lexer(result);
                 Interpreter interpreter = new Interpreter(lexer);
-                result = "Sentence: " + result;
-                result += "\r\nResult: " + interpreter.Program().ToString();
-                result += "\r\nToken Stream:" + Token.tokenStream;
+                result = "Sentence: \r\n" + result;
+                result += "\r\n\r\nResult: \r\n" + interpreter.Program().ToString();
+                //result += "\r\nToken Stream:" + Token.tokenStream;
+                dgvLexemeTable.DataSource = Token.GetTable();
                 dgvSymbolTable.DataSource = Symbol.GetTable();
                 txtOutput.Text = result.ToString();
                 sr.Close();
             }
-        }
-
-        private void btnInput_Click(object sender, EventArgs e)
-        {
-            System.Windows.Forms.Timer timer = Interpreter.timer;
-            timer.Stop();
-            timer.Enabled = false;
-            Interpreter.exitFlag = true;
-        }
-
-        public string GetTxtInput()
-        {
-            return txtInput.Text;
         }
     }
 
@@ -134,14 +123,35 @@ namespace SIMPOL
         public static string tokenStream { get; set; }
         public string type { get; set; }
         public string value { get; set; }
+        public static DataTable dt= CreateTable();
         public Token(string type, string value)
         {
             this.type = type;
             this.value = value;
         }
-        public string TokenString(string type, string value)
+        //public string TokenString(string type, string value)
+        //{
+        //    return "\r\nToken(" + type + ", " + value + ")";
+        //}
+        private static DataTable CreateTable()
         {
-            return "\r\nToken(" + type + ", " + value + ")";
+            dt = new DataTable("Tokens");
+            dt.Columns.Add("Type", typeof(string));
+            //dt.PrimaryKey = new DataColumn[] { dt.Columns["Name"] };
+            dt.Columns.Add("Value", typeof(string));
+            return dt;
+        }
+        public static DataTable GetTable()
+        {
+            return dt;
+        }
+        public static void AddRecord(string type, string value)
+        {
+            dt.Rows.Add(new string[] { type, value });
+        }
+        public static void Clear()
+        {
+            dt.Clear();
         }
     }
 
@@ -150,7 +160,6 @@ namespace SIMPOL
         public string name { get; set; }
         public string type { get; set; }
         public string value { get; set; }
-        public static string symbolStream { get; set; }
         private static DataTable dt = CreateTable();
         public Symbol(string type, string name, string value)
         {
@@ -228,6 +237,9 @@ namespace SIMPOL
                     if (newValue[0] == '$' ||
                         newValue[newValue.Length - 1] == '$')
                     {
+                        newValue = newValue.TrimStart('$');
+                        newValue = newValue.TrimEnd('$');
+                        //newValue = newValue.Remove(newValue.Length - 1);
                         dr[0]["Value"] = newValue;
                     }
                     else
@@ -338,55 +350,59 @@ namespace SIMPOL
                 else if (char.IsDigit(currentChar))
                 {
                     token = new Token(Token.TokenInteger, Integer());
-                    Token.tokenStream += token.TokenString(token.type, token.value);
+                    //Token.tokenStream += token.TokenString(token.type, token.value);
+                    Token.AddRecord(token.type, token.value);
                     return token;
                 }
                 else if (char.IsLetter(currentChar))
                 {
                     token = Identifier();
-                    Token.tokenStream += token.TokenString(token.type, token.value);
-                    //if (token.type == Token.TokenId)
-                    //{
-                    //    Symbol symbol = new Symbol(token.type, token.value, "null");
-                    //}
+                    //Token.tokenStream += token.TokenString(token.type, token.value);
+                    Token.AddRecord(token.type, token.value);
                     return token;
                 }
                 else if (currentChar == '$')
                 {
                     Token startDollar = new Token(Token.TokenDollar, currentChar.ToString());
-                    Token.tokenStream += startDollar.TokenString(startDollar.type, startDollar.value);
+                    //Token.tokenStream += startDollar.TokenString(startDollar.type, startDollar.value);
+                    Token.AddRecord(startDollar.type, startDollar.value);
                     token = ParseString();
-                    Token.tokenStream += token.TokenString(token.type, token.value);
+                    //Token.tokenStream += token.TokenString(token.type, token.value);
                     Token endDollar = new Token(Token.TokenDollar, currentChar.ToString());
-                    Token.tokenStream += endDollar.TokenString(endDollar.type, endDollar.value);
+                    //Token.tokenStream += endDollar.TokenString(endDollar.type, endDollar.value);
+                    Token.AddRecord(endDollar.type, endDollar.value);
                     Advance();
                     return token;
                 }
                 else if (currentChar == '(')
                 {
                     token = new Token(Token.TokenLParen, currentChar.ToString());
-                    Token.tokenStream += token.TokenString(token.type, token.value);
+                    //Token.tokenStream += token.TokenString(token.type, token.value);
+                    Token.AddRecord(token.type, token.value);
                     Advance();
                     return token;
                 }
                 else if (currentChar == ')')
                 {
                     token = new Token(Token.TokenRParen, currentChar.ToString());
-                    Token.tokenStream += token.TokenString(token.type, token.value);
+                    //Token.tokenStream += token.TokenString(token.type, token.value);
+                    Token.AddRecord(token.type, token.value);
                     Advance();
                     return token;
                 }
                 else if (currentChar == '{')
                 {
                     token = new Token(Token.TokenLBrace, currentChar.ToString());
-                    Token.tokenStream += token.TokenString(token.type, token.value);
+                    //Token.tokenStream += token.TokenString(token.type, token.value);
+                    Token.AddRecord(token.type, token.value);
                     Advance();
                     return token;
                 }
                 else if (currentChar == '}')
                 {
                     token = new Token(Token.TokenRBrace, currentChar.ToString());
-                    Token.tokenStream += token.TokenString(token.type, token.value);
+                    //Token.tokenStream += token.TokenString(token.type, token.value);
+                    Token.AddRecord(token.type, token.value);
                     Advance();
                     return token;
                 }
@@ -427,10 +443,6 @@ namespace SIMPOL
         Token token;
         Lexer lexer;
         int result;
-
-        public static System.Windows.Forms.Timer timer = new System.Windows.Forms.Timer();
-        static int alarmCounter = 1;
-        public static bool exitFlag = false;
 
         public Interpreter(Lexer inputLexer)
         {
@@ -526,6 +538,8 @@ namespace SIMPOL
             else if (currentToken.type == Token.TokenStg)
             {
                 output = currentToken.value;
+                output = output.TrimStart('$');
+                output = output.TrimEnd('$');
                 Eat(Token.TokenStg);
             }
             else if (currentToken.type == Token.TokenId)
@@ -539,35 +553,21 @@ namespace SIMPOL
 
         public void Ask()
         {
-            //await Task.Delay(2000);
-            //Timer timer = new Timer(, null, 2000, 0);
-            timer.Tick += new EventHandler(TimerEventProcessor);
-            timer.Interval = 10000;
-            timer.Start();
-            while (exitFlag == false)
-            {
-                Application.DoEvents();
-            }
-
-            simpolInterpreter form = new simpolInterpreter();
-            string input = form.GetTxtInput();
             DataRow[] dr = Symbol.Lookup(currentToken.value);
-            Symbol.EditSymbol(dr, input);
-            Eat(Token.TokenId);
-        }
+            string variableType = dr[0]["Type"].ToString();
+            string variableName = dr[0]["Name"].ToString();
 
-        private static void TimerEventProcessor(Object myObject, EventArgs myEventArgs)
-        {
-            timer.Stop();
-            if (MessageBox.Show("Please input a value into the textbox", "Input Value",
-               MessageBoxButtons.OK) == DialogResult.OK)
+            string labelText = string.Format("Please input \'{0}\' value for variable \'{1}\'.", variableType, variableName);
+            string promptValue = Prompt.ShowDialog(labelText, "Input Value");
+
+            if (promptValue.Length == 0)
             {
-                alarmCounter += 1;
-                timer.Enabled = true;
+                Ask();
             }
             else
             {
-                exitFlag = true;
+                Symbol.EditSymbol(dr, promptValue);
+                Eat(Token.TokenId);
             }
         }
 
@@ -603,7 +603,8 @@ namespace SIMPOL
             token = currentToken;
             if (token.type == Token.TokenInteger ||
                 token.type == Token.TokenAdd ||
-                token.type == Token.TokenSubtract)
+                token.type == Token.TokenSubtract ||
+                token.type == Token.TokenId)
             {
                 result = Factor();
             }
@@ -644,12 +645,13 @@ namespace SIMPOL
                 Eat(Token.TokenInteger);
                 return int.Parse(token.value);
             }
-            else if (token.type == Token.TokenLParen)
+            else if (token.type == Token.TokenId)
             {
-                Eat(Token.TokenLParen);
-                result = Expr();
-                Eat(Token.TokenRParen);
-                return result;
+                DataRow[] dr = Symbol.Lookup(currentToken.value);
+                string symbolValue = dr[0]["Value"].ToString();
+                Symbol.EditSymbol(dr, symbolValue);
+                Eat(Token.TokenId);
+                return int.Parse(symbolValue);
             }
             else if (token.type == Token.TokenAdd ||
                token.type == Token.TokenSubtract ||
@@ -673,7 +675,8 @@ namespace SIMPOL
             if (token.type == Token.TokenMultiply ||
                 token.type == Token.TokenDivide ||
                 token.type == Token.TokenModulo ||
-                token.type == Token.TokenInteger)
+                token.type == Token.TokenInteger ||
+                token.type == Token.TokenId)
             {
                 result = Term();
             }
@@ -821,240 +824,6 @@ namespace SIMPOL
             }
         }
 
-        //public bool LogicalAnd()
-        //{
-        //    bool left;
-        //    bool right;
-        //    Eat(Token.TokenAnd);
-        //    #region TokenChecking
-        //    if (currentToken.type == Token.TokenGreaterThan ||
-        //    currentToken.type == Token.TokenGreaterEqual ||
-        //    currentToken.type == Token.TokenLessThan ||
-        //    currentToken.type == Token.TokenLessEqual ||
-        //    currentToken.type == Token.TokenEqual)
-        //    {
-        //        left = NumericPredicate();
-
-        //        if (currentToken.type == Token.TokenGreaterThan ||
-        //        currentToken.type == Token.TokenGreaterEqual ||
-        //        currentToken.type == Token.TokenLessThan ||
-        //        currentToken.type == Token.TokenLessEqual ||
-        //        currentToken.type == Token.TokenEqual)
-        //        {
-        //            right = NumericPredicate();
-        //        }
-        //        else if (currentToken.type == Token.TokenAnd ||
-        //        currentToken.type == Token.TokenOr ||
-        //        currentToken.type == Token.TokenNon)
-        //        {
-        //            right = LogicalOperation();
-        //        }
-        //        else if (currentToken.type == Token.TokenId)
-        //        {
-        //            DataRow[] dr = Symbol.Lookup(currentToken.value);
-        //            Symbol.EditSymbol(dr, dr[0]["Value"].ToString());
-        //            right = Boolean.Parse(currentToken.value);
-        //            Eat(Token.TokenId);
-        //        }
-        //        else
-        //        {
-        //            right = Boolean.Parse(currentToken.value);
-        //            Eat(Token.TokenKeyword);
-        //        }
-        //    }
-        //    else if (currentToken.type == Token.TokenAnd ||
-        //    currentToken.type == Token.TokenOr ||
-        //    currentToken.type == Token.TokenNon)
-        //    {
-        //        left = LogicalOperation();
-
-        //        if (currentToken.type == Token.TokenGreaterThan ||
-        //        currentToken.type == Token.TokenGreaterEqual ||
-        //        currentToken.type == Token.TokenLessThan ||
-        //        currentToken.type == Token.TokenLessEqual ||
-        //        currentToken.type == Token.TokenEqual)
-        //        {
-        //            right = NumericPredicate();
-        //        }
-        //        else if (currentToken.type == Token.TokenAnd ||
-        //        currentToken.type == Token.TokenOr ||
-        //        currentToken.type == Token.TokenNon)
-        //        {
-        //            right = LogicalOperation();
-        //        }
-        //        else if (currentToken.type == Token.TokenId)
-        //        {
-        //            DataRow[] dr = Symbol.Lookup(currentToken.value);
-        //            Symbol.EditSymbol(dr, dr[0]["Value"].ToString());
-        //            right = Boolean.Parse(currentToken.value);
-        //            Eat(Token.TokenId);
-        //        }
-        //        else
-        //        {
-        //            right = Boolean.Parse(currentToken.value);
-        //            Eat(Token.TokenKeyword);
-        //        }
-        //    }
-        //    else
-        //    {
-        //        left = Boolean.Parse(currentToken.value);
-        //        Eat(Token.TokenKeyword);
-
-        //        if (currentToken.type == Token.TokenGreaterThan ||
-        //        currentToken.type == Token.TokenGreaterEqual ||
-        //        currentToken.type == Token.TokenLessThan ||
-        //        currentToken.type == Token.TokenLessEqual ||
-        //        currentToken.type == Token.TokenEqual)
-        //        {
-        //            right = NumericPredicate();
-        //        }
-        //        else if (currentToken.type == Token.TokenAnd ||
-        //        currentToken.type == Token.TokenOr ||
-        //        currentToken.type == Token.TokenNon)
-        //        {
-        //            right = LogicalOperation();
-        //        }
-        //        else
-        //        {
-        //            right = Boolean.Parse(currentToken.value);
-        //            Eat(Token.TokenKeyword);
-        //        }
-        //    }
-        //    #endregion
-        //    if ((left == true) && (right == true))
-        //    {
-        //        return true;
-        //    }
-        //    else
-        //    {
-        //        return false;
-        //    }
-        //}
-
-        //public bool LogicalOr()
-        //{
-        //    bool left;
-        //    bool right;
-        //    Eat(Token.TokenOr);
-        //    #region TokenChecking
-        //    if (currentToken.type == Token.TokenGreaterThan ||
-        //    currentToken.type == Token.TokenGreaterEqual ||
-        //    currentToken.type == Token.TokenLessThan ||
-        //    currentToken.type == Token.TokenLessEqual ||
-        //    currentToken.type == Token.TokenEqual)
-        //    {
-        //        left = NumericPredicate();
-
-        //        if (currentToken.type == Token.TokenGreaterThan ||
-        //        currentToken.type == Token.TokenGreaterEqual ||
-        //        currentToken.type == Token.TokenLessThan ||
-        //        currentToken.type == Token.TokenLessEqual ||
-        //        currentToken.type == Token.TokenEqual)
-        //        {
-        //            right = NumericPredicate();
-        //        }
-        //        else if (currentToken.type == Token.TokenAnd ||
-        //        currentToken.type == Token.TokenOr ||
-        //        currentToken.type == Token.TokenNon)
-        //        {
-        //            right = LogicalOperation();
-        //        }
-        //        else
-        //        {
-        //            right = Boolean.Parse(currentToken.value);
-        //            Eat(Token.TokenKeyword);
-        //        }
-        //    }
-        //    else if (currentToken.type == Token.TokenAnd ||
-        //    currentToken.type == Token.TokenOr ||
-        //    currentToken.type == Token.TokenNon)
-        //    {
-        //        left = LogicalOperation();
-
-        //        if (currentToken.type == Token.TokenGreaterThan ||
-        //        currentToken.type == Token.TokenGreaterEqual ||
-        //        currentToken.type == Token.TokenLessThan ||
-        //        currentToken.type == Token.TokenLessEqual ||
-        //        currentToken.type == Token.TokenEqual)
-        //        {
-        //            right = NumericPredicate();
-        //        }
-        //        else if (currentToken.type == Token.TokenAnd ||
-        //        currentToken.type == Token.TokenOr ||
-        //        currentToken.type == Token.TokenNon)
-        //        {
-        //            right = LogicalOperation();
-        //        }
-        //        else
-        //        {
-        //            right = Boolean.Parse(currentToken.value);
-        //            Eat(Token.TokenKeyword);
-        //        }
-        //    }
-        //    else
-        //    {
-        //        left = Boolean.Parse(currentToken.value);
-        //        Eat(Token.TokenKeyword);
-
-        //        if (currentToken.type == Token.TokenGreaterThan ||
-        //        currentToken.type == Token.TokenGreaterEqual ||
-        //        currentToken.type == Token.TokenLessThan ||
-        //        currentToken.type == Token.TokenLessEqual ||
-        //        currentToken.type == Token.TokenEqual)
-        //        {
-        //            right = NumericPredicate();
-        //        }
-        //        else if (currentToken.type == Token.TokenAnd ||
-        //        currentToken.type == Token.TokenOr ||
-        //        currentToken.type == Token.TokenNon)
-        //        {
-        //            right = LogicalOperation();
-        //        }
-        //        else
-        //        {
-        //            right = Boolean.Parse(currentToken.value);
-        //            Eat(Token.TokenKeyword);
-        //        }
-        //    }
-        //    #endregion
-        //    if ((left == true) || (right == true))
-        //    {
-        //        return true;
-        //    }
-        //    else
-        //    {
-        //        return false;
-        //    }
-        //}
-
-        //public bool LogicalNon()
-        //{
-        //    bool left;
-        //    Eat(Token.TokenNon);
-        //    #region TokenChecking
-        //    if (currentToken.type == Token.TokenGreaterThan ||
-        //    currentToken.type == Token.TokenGreaterEqual ||
-        //    currentToken.type == Token.TokenLessThan ||
-        //    currentToken.type == Token.TokenLessEqual ||
-        //    currentToken.type == Token.TokenEqual)
-        //    {
-        //        left = NumericPredicate();
-        //    }
-        //    else if (currentToken.type == Token.TokenAnd ||
-        //    currentToken.type == Token.TokenOr ||
-        //    currentToken.type == Token.TokenNon)
-        //    {
-        //        left = LogicalOperation();
-        //    }
-        //    else
-        //    {
-        //        left = Boolean.Parse(currentToken.value);
-        //        Eat(Token.TokenKeyword);
-        //    }
-        //    #endregion
-        //    return !left;
-        //}
-
         public bool ParseLogical()
         {
             bool result;
@@ -1075,8 +844,9 @@ namespace SIMPOL
             else if (currentToken.type == Token.TokenId)
             {
                 DataRow[] dr = Symbol.Lookup(currentToken.value);
-                Symbol.EditSymbol(dr, dr[0]["Value"].ToString());
-                result = Boolean.Parse(currentToken.value);
+                string symbolValue = dr[0]["Value"].ToString();
+                Symbol.EditSymbol(dr, symbolValue);
+                result = Boolean.Parse(symbolValue);
                 Eat(Token.TokenId);
             }
             else
@@ -1089,7 +859,6 @@ namespace SIMPOL
 
         public void AssignmentStatement()
         {
-            //PUT <expr> IN [variable name]
             string variableValue = null;
             Eat(Token.TokenPut);
             if (currentToken.type == Token.TokenAdd ||
@@ -1129,6 +898,31 @@ namespace SIMPOL
             DataRow[] dr = Symbol.Lookup(currentToken.value);
             Symbol.EditSymbol(dr, variableValue);
             Eat(Token.TokenId);
+        }
+    }
+
+    public static class Prompt
+    {
+        public static string ShowDialog(string text, string caption)
+        {
+            Form prompt = new Form()
+            {
+                Width = 415,
+                Height = 100,
+                FormBorderStyle = FormBorderStyle.FixedDialog,
+                Text = caption,
+                StartPosition = FormStartPosition.CenterScreen
+            };
+            Label textLabel = new Label() { Left = 10, Top = 10, Width = 300, Text = text };
+            TextBox textBox = new TextBox() { Left = 10, Top = 30, Width = 300 };
+            Button confirmation = new Button() { Text = "Submit", Left = 315, Top = 29, DialogResult = DialogResult.OK };
+            confirmation.Click += (sender, e) => { prompt.Close(); };
+            prompt.Controls.Add(textBox);
+            prompt.Controls.Add(confirmation);
+            prompt.Controls.Add(textLabel);
+            prompt.AcceptButton = confirmation;
+
+            return prompt.ShowDialog() == DialogResult.OK ? textBox.Text : "";
         }
     }
 }
