@@ -7,7 +7,7 @@ This interpreter is programmed in **C#** and is designed to interpret the SIMPOL
 
 When using the interpreter you will be greeted with a window with a Browse button that you will use to open the SIMPOL code, along with a textbox below it that will display the code of the source code as well as outputs from any operation. On the right will be two gridviews that will display the tokens or lexemes as well as the variables and their values.
 
-Below are summarized grammar specifications for all operations of the SIMPOL language. Full documentation of the interpreter and the language can be viewed here: https://1drv.ms/w/s!AuaGlbRQ1zi4gbUabiSlDlkVdlnMkQ. A compiled version will be coming soon.
+Below are summarized grammar specifications for all operations of the SIMPOL language. Full documentation of the interpreter and the language can be viewed here: https://1drv.ms/w/s!AuaGlbRQ1zi4gbUabiSlDlkVdlnMkQ.
 
 ## Variables
 Variables must start with a letter and can be followed by any alphanumeric character:
